@@ -102,12 +102,12 @@ class GraphRAGService:
                 params=QueryParam(
                     with_references=True,
                     entities_max_tokens=4000,
-                    relations_max_tokens=3000,
+                    relationships_max_tokens=3000,
                     chunks_max_tokens=9000,
                 ),
             )
         except Exception as exc:
-            return {"answer": f"Query failed: {exc}", "entities": [], "relations": []}
+            return {"answer": f"Query failed: {exc}", "entities": [], "relationships": []}
 
         # Extract entities with PageRank scores
         entities: list[dict] = []
@@ -120,14 +120,14 @@ class GraphRAGService:
                     "pagerank_score": float(score),
                 })
 
-        # Extract relations
-        relations: list[dict] = []
-        if response.context and response.context.relations:
-            for relation, score in response.context.relations[:top_k * 2]:
-                relations.append({
-                    "source":      relation.source,
-                    "target":      relation.target,
-                    "description": getattr(relation, "description", ""),
+        # Extract relationships
+        relationships: list[dict] = []
+        if response.context and hasattr(response.context, 'relationships') and response.context.relationships:
+            for rel, score in response.context.relationships[:top_k * 2]:
+                relationships.append({
+                    "source":      rel.source,
+                    "target":      rel.target,
+                    "description": getattr(rel, "description", ""),
                     "score":       float(score),
                 })
 
@@ -137,7 +137,7 @@ class GraphRAGService:
         return {
             "answer":    answer,
             "entities":  entities,
-            "relations": relations,
+            "relationships": relationships,
         }
 
     # ------------------------------------------------------------------
