@@ -249,14 +249,19 @@ with tab2:
         st.stop()
 
     # CONVERSATION STATE - after first message
-    # Header row with restart button
-    col1, col2 = st.columns([4, 1])
+    # Header row with top-k selector and restart button
+    col1, col2, col3 = st.columns([3, 1, 1])
     with col1:
         if has_docs:
-            st.caption(f":material/hub: PageRank retrieval · {stats['nodes']} entities · top-k ranking")
+            st.caption(f":material/hub: PageRank retrieval · {stats['nodes']} entities")
         else:
             st.caption(":material/chat: Direct LLM mode (no graph)")
     with col2:
+        if has_docs:
+            top_k = st.selectbox("Top-k", options=list(range(1, 11)), index=4, label_visibility="collapsed", help="Number of top entities to retrieve")
+        else:
+            top_k = 5
+    with col3:
         def restart_chat():
             st.session_state.messages = []
             st.session_state.initial_q = None
@@ -283,8 +288,8 @@ with tab2:
                 entities = msg["entities"]
                 if entities:
                     st.markdown("---")
-                    st.caption(f"**Top-{min(len(entities), 8)} retrieved entities** (ranked by PageRank score)")
-                    for i, e in enumerate(entities[:8], 1):
+                    st.caption(f"**Top-{len(entities)} retrieved entities** (ranked by PageRank score)")
+                    for i, e in enumerate(entities, 1):
                         score = e.get('pagerank_score', 0)
                         etype = e.get('type', 'Unknown')
                         name = e.get('name', 'Unknown')
@@ -300,7 +305,7 @@ with tab2:
         with st.spinner("Searching..." if has_docs else "Thinking..."):
             try:
                 if has_docs:
-                    result = get_service().query(user_message, top_k=8)
+                    result = get_service().query(user_message, top_k=top_k)
                     answer = strip_citations(result.get("answer", "No answer found."))
                     entities = result.get("entities", [])
                     # If no entities found, mention it
@@ -327,7 +332,7 @@ with tab2:
         with st.spinner("Searching..." if has_docs else "Thinking..."):
             try:
                 if has_docs:
-                    result = get_service().query(follow_up, top_k=8)
+                    result = get_service().query(follow_up, top_k=top_k)
                     answer = strip_citations(result.get("answer", "No answer found."))
                     entities = result.get("entities", [])
                     if not entities and "Error" not in answer:
