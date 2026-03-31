@@ -293,9 +293,22 @@ with tab2:
                         score = e.get('pagerank_score', 0)
                         etype = e.get('type', 'Unknown')
                         name = e.get('name', 'Unknown')
-                        # Format score as percentage
                         score_pct = f"{score*100:.2f}%" if score > 0 else "—"
                         st.caption(f"**{i}.** {name} · _{etype}_ · PageRank: {score_pct}")
+
+            # Show propagation chain (relationships traversed)
+            if msg["role"] == "assistant" and msg.get("relationships"):
+                relationships = msg["relationships"]
+                if relationships:
+                    st.caption(f"**Propagation chain** (top relationships by PageRank score)")
+                    for rel in relationships:
+                        score = rel.get('score', 0)
+                        score_pct = f"{score*100:.2f}%" if score > 0 else "—"
+                        desc = rel.get('description', '')
+                        label = f"**{rel['source']}** → **{rel['target']}** · {score_pct}"
+                        if desc:
+                            label += f"  \n  _{desc}_"
+                        st.caption(label)
 
     # Process new message (from initial input or pill)
     if user_message:
@@ -321,7 +334,8 @@ with tab2:
         st.session_state.messages.append({
             "role": "assistant",
             "content": answer,
-            "entities": entities
+            "entities": entities,
+            "relationships": result.get("relationships", []) if has_docs else [],
         })
         st.rerun()
 
@@ -347,7 +361,8 @@ with tab2:
         st.session_state.messages.append({
             "role": "assistant",
             "content": answer,
-            "entities": entities
+            "entities": entities,
+            "relationships": result.get("relationships", []) if has_docs else [],
         })
         st.rerun()
 
